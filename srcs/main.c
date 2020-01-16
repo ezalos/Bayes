@@ -6,7 +6,7 @@
 /*   By: ldevelle <ldevelle@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/05/07 13:36:45 by ldevelle          #+#    #+#             */
-/*   Updated: 2020/01/16 16:29:58 by ezalos           ###   ########.fr       */
+/*   Updated: 2020/01/16 18:01:27 by ezalos           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define	SIZE	80
-#define	LENGTH	(SIZE * 2)
+#define	SIZE	50
+#define	LENGTH	(SIZE * 2.5)
 #define	HEIGHT	SIZE
 #define OFFSET	1
 
@@ -25,18 +25,19 @@ typedef struct		s_bayes
 	int				a;
 	int				b;
 	int				n;
-	long double		exp[2];
-	long double		pos[2];
-	long double		hyp[2];
-	// long double		guess_y;
-	// long double		guess_x;
+	long double		exp[2];//experiment					white
+	long double		pos[2];//position of real point		green
+	long double		hyp[2];//current hypothesis			red
 }					t_bayes;
 
-double factorial (int n) {
-    double f[211] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600, 6227020800, 87178291200, 1307674368000, 20922789888000, 355687428096000, 6402373705728000, 121645100408832000, 2432902008176640000/*, 51090942171709440000*/};
+long double factorial (int n) {
+    long double f[211] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880,\
+		3628800, 39916800, 479001600, 6227020800, 87178291200, 1307674368000,\
+		20922789888000, 355687428096000, 6402373705728000, 121645100408832000,\
+		2432902008176640000/*, 51090942171709440000*/};
 	if (n < 21)
 		return f[n];
-	double solution = 1;
+	long double solution = 1;
     for (int i = 2; i <= n; i++)
         solution *= i;
     return solution;
@@ -44,8 +45,8 @@ double factorial (int n) {
 
 long double	bayes_distribution(double x, double y, t_bayes *bayes)
 {
-	// Pr(x, y | Tn) = x^a (1 – x)^(n – a) y^a (1 – y)^(n – y) / Pr(Tn),
-	// Pr(Tn) = a! (n – a)! b! (n – b)! / (n – 1)!^2
+	// Pr(x, y | Tn) = x^a (1 – x)^(n – a) y^b (1 – y)^(n – b) / Pr(Tn),
+	// Pr(Tn) = a! (n – a)! b! (n – b)! / (n + 1)!^2
 	long double prob_x;
 	long double prob_y;
 	long double prob_tn_a;
@@ -132,8 +133,7 @@ void 	rerender_points(t_bayes *bayes, int x, int y, int mode)
 	if (mode || ((int)(bayes->exp[0] * HEIGHT) == y && (int)(bayes->exp[1] * LENGTH) == x))
 		plot_point(bayes->exp, 255, 255, 255);
 	if (mode || ((int)(bayes->pos[0] * HEIGHT) == y && (int)(bayes->pos[1] * LENGTH) == x))
-		plot_point(bayes->pos, 0, 255, 0);
-
+		plot_point(bayes->pos, 0, 0, 255);
 }
 
 int 	plot_bayes(t_bayes *bayes)
@@ -149,11 +149,12 @@ int 	plot_bayes(t_bayes *bayes)
 		j = -1;
 		while (++j < LENGTH)
 		{
-			res = bayes_distribution((double)i / (double)HEIGHT, (double)j / (double)LENGTH, bayes);
+			res = bayes_distribution((double)i / (double)HEIGHT,\
+				(double)j / (double)LENGTH, bayes);
 			if (res == INFINITY || res == -INFINITY)
 				return (-1);
-			(void)max;
-			plot_point_int(j + OFFSET,  i + OFFSET, (int)(((double)res / (double)max) * (double)255 * 0.05));
+			plot_point_int(j + OFFSET,  i + OFFSET,\
+				(int)(((double)res / (double)max) * (double)255 * 0.05));
 			rerender_points(bayes, i, j, 0);
 		}
 	}
@@ -186,6 +187,7 @@ int		new_data(t_bayes *bayes, int iter)
 
 	rerender_points(bayes, 0, 0, 1);
 	if (save * 1.1 < iter)
+		// (void)save; //allow to see every iteration if uncommented
 	{
 		save = iter;
 		if (plot_bayes(bayes))
@@ -204,8 +206,13 @@ int		main(void)
 		init(&bayes);
 		iter = -1;
 		clear_screen();
-		while (new_data(&bayes, ++iter));
+		while (new_data(&bayes, ++iter))
+		{
+			ft_place_cursor(HEIGHT + (OFFSET * 2) + 1, 5);
+			ft_printf("Iterations: %-10d\t", iter);
+			ft_printf("Top side: %-10d\t", bayes.a);
+			ft_printf("Left side: %-10d\n", bayes.b);
+		}
 	}
-	ft_place_cursor(HEIGHT + 10, LENGTH + 4);
 	return (0);
 }
