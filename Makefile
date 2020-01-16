@@ -6,7 +6,7 @@
 #    By: ldevelle <ldevelle@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/11/12 15:04:16 by ldevelle          #+#    #+#              #
-#    Updated: 2020/01/15 16:14:06 by ezalos           ###   ########.fr        #
+#    Updated: 2020/01/16 13:46:49 by ezalos           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -33,7 +33,7 @@ CFLAGS	= -Wall -Wextra -Werror
 login 		=	ldevelle
 
 LIB_DIR		=	./libft
-LIB			=	$(LIB_DIR)/libft.a
+LIB			=	$(LIB_DIR)/libft.a -lm
 
 HEAD_DIR 	= 	./includes/
 HEADERS		=	$(AUTO_HEAD)\

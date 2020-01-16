@@ -6,121 +6,167 @@
 /*   By: ldevelle <ldevelle@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/05/07 13:36:45 by ldevelle          #+#    #+#             */
-/*   Updated: 2020/01/15 16:07:39 by ezalos           ###   ########.fr       */
+/*   Updated: 2020/01/16 16:06:57 by ezalos           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../libft/includes/libft.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define	SIZE	80
+#define	LENGTH	(SIZE * 2)
+#define	HEIGHT	SIZE
+#define OFFSET	1
 
 typedef struct		s_bayes
 {
-	char			orig[2];
-	char			guess[2];
-	char			last[2];
-	int				up;
-	int				down;
-	int				left;
-	int				right;
+	int				a;
+	int				b;
+	int				n;
+	long double		exp[2];
+	long double		pos[2];
+	long double		hyp[2];
+	// long double		guess_y;
+	// long double		guess_x;
 }					t_bayes;
 
-void	print_tab(t_bayes *bayes)
+double factorial (int n) {
+    double f[211] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600, 6227020800, 87178291200, 1307674368000, 20922789888000, 355687428096000, 6402373705728000, 121645100408832000, 2432902008176640000/*, 51090942171709440000*/};
+	if (n < 21)
+		return f[n];
+	double solution = 1;
+    for (int i = 2; i <= n; i++)
+        solution *= i;
+    return solution;
+}
+
+long double	bayes_distribution(double x, double y, t_bayes *bayes)
+{
+	// Pr(x, y | Tn) = x^a (1 – x)^(n – a) y^a (1 – y)^(n – y) / Pr(Tn),
+	// Pr(Tn) = a! (n – a)! b! (n – b)! / (n – 1)!^2
+	long double prob_x;
+	long double prob_y;
+	long double prob_tn_a;
+	long double prob_tn_b;
+	long double prob_tn;
+	long double result;
+
+	prob_x = pow(x, bayes->a) * pow(1 - x, bayes->n - bayes->a);
+	prob_y = pow(y, bayes->b) * pow(1 - y, bayes->n - bayes->b);
+	prob_tn_a = factorial(bayes->a) * factorial(bayes->n - bayes->a);
+	prob_tn_b = factorial(bayes->b) * factorial(bayes->n - bayes->b);
+	prob_tn = prob_tn_a * prob_tn_b / pow(factorial(bayes->n + 1), 2);
+	result =  prob_x * prob_y / prob_tn;
+	return (result);
+}
+
+void	clear_screen(void)
 {
 	int		j;
 	int		i;
 
 	ft_place_cursor(0, 0);
-	ft_printf("\n ");
+	ft_printf(" ");
 	i = -1;
-	while (++i < SIZE)
+	while (++i < LENGTH)
 		ft_printf("_");
 	ft_printf("\n");
 	j = -1;
-	while (++j < SIZE)
+	while (++j < HEIGHT)
 	{
 		ft_printf("|");
 		i = -1;
-		while (++i < SIZE)
-		{
-			if (i == bayes->guess[1] && j == bayes->guess[0])
-			{
-				ft_printf("%~{b255;0;0}");
-				ft_printf("G");
-				ft_printf("%~{}");
-			}
-			else if (i == bayes->orig[1] && j == bayes->orig[0])
-			{
-				ft_printf("%~{b0;255;0}");
-				ft_printf("O");
-				ft_printf("%~{}");
-			}
-			else if (i == bayes->last[1] && j == bayes->last[0])
-			{
-				ft_printf("%~{b255;255;255}");
-				ft_printf("L");
-				ft_printf("%~{}");
-			}
-			else
-				ft_printf(" ");
-		}
+		while (++i < LENGTH)
+			ft_printf(" ");
 		ft_printf("|\n");
 	}
 	ft_printf(" ");
 	i = -1;
-	while (++i < SIZE)
+	while (++i < LENGTH)
 		ft_printf("_");
 	ft_printf("\n");
+}
+
+void	plot_point(long double *point, int red, int green, int blue)
+{
+	ft_place_cursor(OFFSET + 1 + (point[0] * (HEIGHT - 1)),
+		OFFSET + 1 + (point[1] * (LENGTH - 1)));
+	ft_printf("%~{b*;*;*} %~{}", red, green, blue);
+}
+
+void	plot_point_int(int y, int x, int red)
+{
+	if (red < 0)
+		red = 0;
+	if (red > 255)
+		red = 255;
+	ft_place_cursor(OFFSET + x, OFFSET + y);
+	ft_printf("%~{b*;0;0} %~{}", red);
+}
+
+void 	rerender_points(t_bayes *bayes, int x, int y, int mode)
+{
+	if (mode || ((int)(bayes->hyp[0] * HEIGHT) == y && (int)(bayes->hyp[1] * LENGTH) == x))
+		plot_point(bayes->hyp, 255, 0, 0);
+	if (mode || ((int)(bayes->exp[0] * HEIGHT) == y && (int)(bayes->exp[1] * LENGTH) == x))
+		plot_point(bayes->exp, 255, 255, 255);
+	if (mode || ((int)(bayes->pos[0] * HEIGHT) == y && (int)(bayes->pos[1] * LENGTH) == x))
+		plot_point(bayes->pos, 0, 255, 0);
+
+}
+
+int 	plot_bayes(t_bayes *bayes)
+{
+	static long double	max = 1;
+	long double	res;
+	int i;
+	int j;
+
+	i = -1;
+	while (++i < HEIGHT)
+	{
+		j = -1;
+		while (++j < LENGTH)
+		{
+			res = bayes_distribution((double)i / (double)HEIGHT, (double)j / (double)LENGTH, bayes);
+			if (res == INFINITY || res == -INFINITY)
+				return (-1);
+			(void)max;
+			plot_point_int(j + OFFSET,  i + OFFSET, (int)(((double)res / (double)max) * (double)255));
+			rerender_points(bayes, i, j, 0);
+		}
+	}
+	return (0);
 }
 
 void	init(t_bayes *bayes)
 {
 	srand((unsigned int)(long long)bayes + rand());
-	ft_bzero(bayes, sizeof(*bayes));
-	bayes->guess[0] = SIZE / 2;
-	bayes->guess[1] = SIZE / 2;
-	bayes->last[0] = -1;
-	bayes->last[1] = -1;
-	bayes->orig[0] = rand() % SIZE;
-	bayes->orig[1] = rand() % SIZE;
+	ft_bzero(bayes, sizeof(t_bayes));
+	bayes->pos[0] = (double)rand() / (double)RAND_MAX;
+	bayes->pos[1] = (double)rand() / (double)RAND_MAX;
 	// ft_printf("[%d;%d]\n", bayes->orig[0], bayes->orig[1]);
 }
 
-void		new_data(t_bayes *bayes, int iter)
+int		new_data(t_bayes *bayes, int iter)
 {
-	static intmax_t save = 0;
-	static intmax_t waiting = 100000000;
+	(void)iter;
+	bayes->exp[0] = (double)rand() / (double)RAND_MAX;
+	bayes->exp[1] = (double)rand() / (double)RAND_MAX;
+	if (bayes->exp[0] < bayes->pos[0])
+		bayes->a++;
+	if (bayes->exp[1] < bayes->pos[1])
+		bayes->b++;
+	bayes->n++;
+	bayes->hyp[0] = (double)bayes->a / (double)bayes->n;
+	bayes->hyp[1] = (double)bayes->b / (double)bayes->n;
 
-	bayes->last[0] = rand() % SIZE;
-	bayes->last[1] = rand() % SIZE;
-	if (bayes->last[0] < bayes->orig[0])
-		bayes->up++;
-	else if (bayes->last[0] > bayes->orig[0])
-		bayes->down++;
-
-	if (bayes->last[1] < bayes->orig[1])
-		bayes->left++;
-	else if (bayes->last[1] > bayes->orig[1])
-		bayes->right++;
-
-	bayes->guess[0] = ((float)(bayes->up) / (float)(bayes->up + bayes->down)) * (SIZE);
-	bayes->guess[1] = ((float)(bayes->left) / (float)(bayes->left + bayes->right)) * (SIZE);
-	bayes->guess[0] >= SIZE ? bayes->guess[0]--:(void)bayes;
-	bayes->guess[1] >= SIZE ? bayes->guess[1]--:(void)bayes;
-	if (iter < 100 || iter > (float)save * 1.1)
-	{
-		save = iter;
-		print_tab(bayes);
-		ft_printf("%-6d\t", iter);
-		ft_printf("G[%3d;%3d]\t", bayes->guess[0], bayes->guess[1]);
-		ft_printf("L[%3d;%3d]\t", bayes->last[0], bayes->last[1]);
-		ft_printf("O[%3d;%3d]\n", bayes->orig[0], bayes->orig[1]);
-		ft_printf("U %-5d D %-5d L %-5d R %-5d\n", bayes->up, bayes->down, bayes->left, bayes->right);
-		// ft_wait_pls(waiting);
-		waiting = (float)waiting * 0.9;
-	}
+	rerender_points(bayes, 0, 0, 1);
+	if (plot_bayes(bayes))
+		return (0);
+	return (-1);
 }
 
 int		main(void)
@@ -131,10 +177,10 @@ int		main(void)
 	while (1)
 	{
 		init(&bayes);
-		print_tab(&bayes);
 		iter = 0;
-		while (iter < 100000)
-			new_data(&bayes, ++iter);
+		clear_screen();
+		while (new_data(&bayes, ++iter));
 	}
+	ft_place_cursor(HEIGHT + 10, LENGTH + 4);
 	return (0);
 }
