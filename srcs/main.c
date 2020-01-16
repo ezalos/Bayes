@@ -6,7 +6,7 @@
 /*   By: ldevelle <ldevelle@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/05/07 13:36:45 by ldevelle          #+#    #+#             */
-/*   Updated: 2020/01/16 16:06:57 by ezalos           ###   ########.fr       */
+/*   Updated: 2020/01/16 16:29:58 by ezalos           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,12 +98,31 @@ void	plot_point(long double *point, int red, int green, int blue)
 
 void	plot_point_int(int y, int x, int red)
 {
+	int blue = 0;
+	int green = 0;
+
 	if (red < 0)
 		red = 0;
-	if (red > 255)
-		red = 255;
 	ft_place_cursor(OFFSET + x, OFFSET + y);
-	ft_printf("%~{b*;0;0} %~{}", red);
+	if (red > 255)
+	{
+		blue = red - 255;
+		if (blue < 0)
+			blue = 0;
+		if (blue > 255)
+		{
+			green = blue - 255;
+			if (green < 0)
+				green = 0;
+			if (green > 255)
+				green = 255;
+			blue = 255;
+		}
+		red = 255;
+		// ft_printf(" ");
+	}
+	// else
+		ft_printf("%~{b*;*;*} %~{}", red, green, blue);
 }
 
 void 	rerender_points(t_bayes *bayes, int x, int y, int mode)
@@ -134,7 +153,7 @@ int 	plot_bayes(t_bayes *bayes)
 			if (res == INFINITY || res == -INFINITY)
 				return (-1);
 			(void)max;
-			plot_point_int(j + OFFSET,  i + OFFSET, (int)(((double)res / (double)max) * (double)255));
+			plot_point_int(j + OFFSET,  i + OFFSET, (int)(((double)res / (double)max) * (double)255 * 0.05));
 			rerender_points(bayes, i, j, 0);
 		}
 	}
@@ -147,12 +166,14 @@ void	init(t_bayes *bayes)
 	ft_bzero(bayes, sizeof(t_bayes));
 	bayes->pos[0] = (double)rand() / (double)RAND_MAX;
 	bayes->pos[1] = (double)rand() / (double)RAND_MAX;
-	// ft_printf("[%d;%d]\n", bayes->orig[0], bayes->orig[1]);
 }
 
 int		new_data(t_bayes *bayes, int iter)
 {
-	(void)iter;
+	static int	save;
+
+	if (!iter)
+		save = 0;
 	bayes->exp[0] = (double)rand() / (double)RAND_MAX;
 	bayes->exp[1] = (double)rand() / (double)RAND_MAX;
 	if (bayes->exp[0] < bayes->pos[0])
@@ -164,8 +185,12 @@ int		new_data(t_bayes *bayes, int iter)
 	bayes->hyp[1] = (double)bayes->b / (double)bayes->n;
 
 	rerender_points(bayes, 0, 0, 1);
-	if (plot_bayes(bayes))
-		return (0);
+	if (save * 1.1 < iter)
+	{
+		save = iter;
+		if (plot_bayes(bayes))
+			return (0);
+	}
 	return (-1);
 }
 
@@ -177,7 +202,7 @@ int		main(void)
 	while (1)
 	{
 		init(&bayes);
-		iter = 0;
+		iter = -1;
 		clear_screen();
 		while (new_data(&bayes, ++iter));
 	}
