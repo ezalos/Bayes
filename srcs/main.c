@@ -6,7 +6,7 @@
 /*   By: ldevelle <ldevelle@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/05/07 13:36:45 by ldevelle          #+#    #+#             */
-/*   Updated: 2020/01/16 18:01:27 by ezalos           ###   ########.fr       */
+/*   Updated: 2020/01/16 18:26:21 by ezalos           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define	SIZE	50
-#define	LENGTH	(SIZE * 2.5)
+#define	SIZE	100
+#define	LENGTH	(SIZE * 2)
 #define	HEIGHT	SIZE
 #define OFFSET	1
 
