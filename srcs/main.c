@@ -6,7 +6,7 @@
 /*   By: ldevelle <ldevelle@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/05/07 13:36:45 by ldevelle          #+#    #+#             */
-/*   Updated: 2020/01/16 18:26:21 by ezalos           ###   ########.fr       */
+/*   Updated: 2020/01/17 02:43:08 by ezalos           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define	SIZE	100
-#define	LENGTH	(SIZE * 2)
+#define	PROBA_FUNC	1
+#define ITERATIONS	1000000
+#define	SIZE	50
+#define	LENGTH	(SIZE * 3)
 #define	HEIGHT	SIZE
 #define OFFSET	1
 
@@ -26,7 +28,7 @@ typedef struct		s_bayes
 	int				b;
 	int				n;
 	long double		exp[2];//experiment					white
-	long double		pos[2];//position of real point		green
+	long double		pos[2];//position of real point		blue
 	long double		hyp[2];//current hypothesis			red
 }					t_bayes;
 
@@ -37,6 +39,7 @@ long double factorial (int n) {
 		2432902008176640000/*, 51090942171709440000*/};
 	if (n < 21)
 		return f[n];
+	// return factorial(n - 1);
 	long double solution = 1;
     for (int i = 2; i <= n; i++)
         solution *= i;
@@ -90,45 +93,91 @@ void	clear_screen(void)
 	ft_printf("\n");
 }
 
+void	point_fractal(long double *point, int red, int green, int blue);
+
 void	plot_point(long double *point, int red, int green, int blue)
 {
-	ft_place_cursor(OFFSET + 1 + (point[0] * (HEIGHT - 1)),
-		OFFSET + 1 + (point[1] * (LENGTH - 1)));
+	int line = (point[0] * (HEIGHT - 1));
+	int col = (point[1] * (LENGTH - 1));
+
+	if (blue < 0)
+		blue = 0;
+	if (blue > 255)
+		blue = 255;
+	if (blue > 250 && red == 0 && !green && SIZE > 50)
+		point_fractal(point, red, green, blue);
+	ft_place_cursor(OFFSET + 1 + line,
+		OFFSET + 1 + col);
 	ft_printf("%~{b*;*;*} %~{}", red, green, blue);
+}
+
+void	point_move(long double *point, int y, int x, int red, int green, int blue)
+{
+	long double save[2];
+
+	save[0] = point[0];
+	save[1] = point[1];
+	save[0] += ((long double)y / (long double)LENGTH);
+	save[1] += ((long double)x / (long double)HEIGHT);
+	if (save[0] > 0 && save[0] < HEIGHT)
+		if (save[1] > 0 && save[1] < LENGTH)
+			plot_point(save, red, green, blue);
+}
+
+void	point_fractal(long double *point, int red, int green, int blue)
+{
+	int scale = 3;
+
+	point_move(point, -1, 0, red, green, blue - scale);
+	point_move(point, 0, 1, red, green, blue - scale);
+	point_move(point, 1, 0, red, green, blue - scale);
+	point_move(point, 0, -1, red, green, blue - scale);
 }
 
 void	plot_point_int(int y, int x, int red)
 {
 	int blue = 0;
 	int green = 0;
+	int m = 0;
 
 	if (red < 0)
 		red = 0;
 	ft_place_cursor(OFFSET + x, OFFSET + y);
 	if (red > 255)
 	{
-		blue = red - 255;
-		if (blue < 0)
-			blue = 0;
-		if (blue > 255)
+		while (red > 255 * 3 && blue < 255)
 		{
-			green = blue - 255;
-			if (green < 0)
-				green = 0;
-			if (green > 255)
-				green = 255;
-			blue = 255;
+			red--;
+			blue++;
 		}
-		red = 255;
-		// ft_printf(" ");
+		while (red > 255 * 2 && green < 255)
+		{
+			red--;
+			green++;
+		}
+		while (red > 255 * 1 && m < 255)
+		{
+			red--;
+			m++;
+		}
+		if (red > 255)
+			red = 255;
 	}
-	// else
+	if (m)
+		ft_printf("%~{b*;*;*}%~{*;*;*} %~{}", red, green, blue, 255 - m, 255 - m, 255 - m);
+	else if (blue || red > 100)
 		ft_printf("%~{b*;*;*} %~{}", red, green, blue);
+	else if (red > 20)
+		ft_printf("%~{*;*;*}X%~{}", 255 - m, m, m);
+	else if (red)
+		ft_printf("%~{*;*;*}.%~{}", 255 - m, m, m);
+	else
+		ft_printf(" ");
 }
 
 void 	rerender_points(t_bayes *bayes, int x, int y, int mode)
 {
-	if (mode || ((int)(bayes->hyp[0] * HEIGHT) == y && (int)(bayes->hyp[1] * LENGTH) == x))
+	if (!PROBA_FUNC && (mode || ((int)(bayes->hyp[0] * HEIGHT) == y && (int)(bayes->hyp[1] * LENGTH) == x)))
 		plot_point(bayes->hyp, 255, 0, 0);
 	if (mode || ((int)(bayes->exp[0] * HEIGHT) == y && (int)(bayes->exp[1] * LENGTH) == x))
 		plot_point(bayes->exp, 255, 255, 255);
@@ -153,10 +202,12 @@ int 	plot_bayes(t_bayes *bayes)
 				(double)j / (double)LENGTH, bayes);
 			if (res == INFINITY || res == -INFINITY)
 				return (-1);
+			(void)max;
 			plot_point_int(j + OFFSET,  i + OFFSET,\
 				(int)(((double)res / (double)max) * (double)255 * 0.05));
 			rerender_points(bayes, i, j, 0);
 		}
+		plot_point(bayes->pos, 0, 0, 255);
 	}
 	return (0);
 }
@@ -189,6 +240,11 @@ int		new_data(t_bayes *bayes, int iter)
 	if (save * 1.1 < iter)
 		// (void)save; //allow to see every iteration if uncommented
 	{
+		if (!PROBA_FUNC || iter > ITERATIONS)
+		{
+			clear_screen();
+			return (-1);
+		}
 		save = iter;
 		if (plot_bayes(bayes))
 			return (0);
