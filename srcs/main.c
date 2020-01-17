@@ -6,7 +6,7 @@
 /*   By: ldevelle <ldevelle@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/05/07 13:36:45 by ldevelle          #+#    #+#             */
-/*   Updated: 2020/01/17 02:43:08 by ezalos           ###   ########.fr       */
+/*   Updated: 2020/01/17 12:27:24 by ezalos           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 
 #define	PROBA_FUNC	1
 #define ITERATIONS	1000000
-#define	SIZE	50
+#define	SIZE	150
 #define	LENGTH	(SIZE * 3)
 #define	HEIGHT	SIZE
 #define OFFSET	1
@@ -104,7 +104,7 @@ void	plot_point(long double *point, int red, int green, int blue)
 		blue = 0;
 	if (blue > 255)
 		blue = 255;
-	if (blue > 250 && red == 0 && !green && SIZE > 50)
+	if (blue > 0 && red == 0 && !green && SIZE > 50)
 		point_fractal(point, red, green, blue);
 	ft_place_cursor(OFFSET + 1 + line,
 		OFFSET + 1 + col);
@@ -117,16 +117,16 @@ void	point_move(long double *point, int y, int x, int red, int green, int blue)
 
 	save[0] = point[0];
 	save[1] = point[1];
-	save[0] += ((long double)y / (long double)LENGTH);
-	save[1] += ((long double)x / (long double)HEIGHT);
-	if (save[0] > 0 && save[0] < HEIGHT)
-		if (save[1] > 0 && save[1] < LENGTH)
+	save[0] += ((long double)y / (long double)(HEIGHT - 1));
+	save[1] += ((long double)x / (long double)(LENGTH - 1));
+	if (save[0] > 0 && save[0] < 1)
+		if (save[1] > 0 && save[1] < 1)
 			plot_point(save, red, green, blue);
 }
 
 void	point_fractal(long double *point, int red, int green, int blue)
 {
-	int scale = 3;
+	int scale = 255 / (SIZE / 50);
 
 	point_move(point, -1, 0, red, green, blue - scale);
 	point_move(point, 0, 1, red, green, blue - scale);
@@ -264,7 +264,7 @@ int		main(void)
 		clear_screen();
 		while (new_data(&bayes, ++iter))
 		{
-			ft_place_cursor(HEIGHT + (OFFSET * 2) + 1, 5);
+			ft_place_cursor(HEIGHT + (OFFSET * 2) + 1, (OFFSET * 2) + 1);
 			ft_printf("Iterations: %-10d\t", iter);
 			ft_printf("Top side: %-10d\t", bayes.a);
 			ft_printf("Left side: %-10d\n", bayes.b);
