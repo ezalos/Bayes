@@ -6,7 +6,7 @@
 /*   By: ldevelle <ldevelle@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/05/07 13:36:45 by ldevelle          #+#    #+#             */
-/*   Updated: 2020/01/17 12:27:24 by ezalos           ###   ########.fr       */
+/*   Updated: 2020/01/20 12:59:44 by ezalos           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,9 +15,10 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define SPEED_COEF	1
 #define	PROBA_FUNC	1
 #define ITERATIONS	1000000
-#define	SIZE	150
+#define	SIZE	50
 #define	LENGTH	(SIZE * 3)
 #define	HEIGHT	SIZE
 #define OFFSET	1
@@ -100,6 +101,8 @@ void	plot_point(long double *point, int red, int green, int blue)
 	int line = (point[0] * (HEIGHT - 1));
 	int col = (point[1] * (LENGTH - 1));
 
+	if (line < 0 || line > HEIGHT || col < 0 || col > LENGTH)
+		return ;
 	if (blue < 0)
 		blue = 0;
 	if (blue > 255)
@@ -140,6 +143,8 @@ void	plot_point_int(int y, int x, int red)
 	int green = 0;
 	int m = 0;
 
+	if (y < 0 || y > LENGTH || x < 0 || x > HEIGHT)
+		return ;
 	if (red < 0)
 		red = 0;
 	ft_place_cursor(OFFSET + x, OFFSET + y);
@@ -157,13 +162,17 @@ void	plot_point_int(int y, int x, int red)
 		}
 		while (red > 255 * 1 && m < 255)
 		{
-			red--;
+			red -= 5;
 			m++;
 		}
 		if (red > 255)
 			red = 255;
 	}
-	if (m)
+	if (m == 255)
+		ft_printf("%~{b*;*;*}%~{*;*;*}#%~{}", red, green, blue, m, 255 - m, 255 - m);
+	else if (m && red == 255 && blue == 255 && green == 255)
+		ft_printf("%~{b*;*;*}%~{*;*;*}*%~{}", red, green, blue, m, 255 - m, 255 - m);
+	else if (m)
 		ft_printf("%~{b*;*;*}%~{*;*;*} %~{}", red, green, blue, 255 - m, 255 - m, 255 - m);
 	else if (blue || red > 100)
 		ft_printf("%~{b*;*;*} %~{}", red, green, blue);
@@ -218,11 +227,14 @@ void	init(t_bayes *bayes)
 	ft_bzero(bayes, sizeof(t_bayes));
 	bayes->pos[0] = (double)rand() / (double)RAND_MAX;
 	bayes->pos[1] = (double)rand() / (double)RAND_MAX;
+	// bayes->pos[0] = 0;
+	// bayes->pos[1] = 0;
 }
 
 int		new_data(t_bayes *bayes, int iter)
 {
-	static int	save;
+	static int			save;
+	// static uintmax_t	waiting = 100000000;
 
 	if (!iter)
 		save = 0;
@@ -237,7 +249,7 @@ int		new_data(t_bayes *bayes, int iter)
 	bayes->hyp[1] = (double)bayes->b / (double)bayes->n;
 
 	rerender_points(bayes, 0, 0, 1);
-	if (save * 1.1 < iter)
+	if (save * SPEED_COEF < iter)
 		// (void)save; //allow to see every iteration if uncommented
 	{
 		if (!PROBA_FUNC || iter > ITERATIONS)
@@ -248,6 +260,8 @@ int		new_data(t_bayes *bayes, int iter)
 		save = iter;
 		if (plot_bayes(bayes))
 			return (0);
+		// ft_wait_pls(waiting);
+		// waiting /= (SPEED_COEF);
 	}
 	return (-1);
 }
@@ -269,6 +283,7 @@ int		main(void)
 			ft_printf("Top side: %-10d\t", bayes.a);
 			ft_printf("Left side: %-10d\n", bayes.b);
 		}
+		sleep(1);
 	}
 	return (0);
 }
